@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Product from "@/models/Product";
 import Category from "@/models/Category";
+import ProductVariant from "@/models/ProductVariant";
 import { generateSKU, generateBarcode } from "@/utils/sku";
 
 export async function GET(request: Request) {
@@ -21,7 +22,6 @@ export async function GET(request: Request) {
 
         const products = await Product.find(query)
             .populate("category", "name")
-            .populate("variants")
             .sort({ createdAt: -1 })
             .limit(50); // limit for performance in POS
 
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
 
         // Resolve Category
         let categoryName = "GEN";
-        if (categoryId) {
+        if (categoryId && categoryId !== "new_disabled") {
             const category = await Category.findById(categoryId);
             if (category) categoryName = category.name;
         }
@@ -60,18 +60,23 @@ export async function POST(request: Request) {
         const sku = body.sku || generateSKU(categoryName, name);
         const barcode = body.barcode || generateBarcode(sku);
 
-        const newProduct = await Product.create({
+        const productData: any = {
             name,
             sku,
             barcode,
-            category: categoryId,
             purchasePrice,
             sellingPrice,
             profitMargin: profitMargin || sellingPrice - purchasePrice,
             stock: stock || 0,
             minStockAlert: minStockAlert || 5,
             expiryDate,
-        });
+        };
+
+        if (categoryId && categoryId !== "new_disabled") {
+            productData.category = categoryId;
+        }
+
+        const newProduct = await Product.create(productData);
 
         return NextResponse.json(
             { success: true, data: newProduct },

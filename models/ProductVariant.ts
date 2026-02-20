@@ -29,5 +29,8 @@ const variantSchema = new Schema<IProductVariant>(
     { timestamps: true },
 );
 
-export default mongoose.models.ProductVariant ||
+const ProductVariant =
+    mongoose.models.ProductVariant ||
     mongoose.model<IProductVariant>("ProductVariant", variantSchema);
+
+export default ProductVariant;

@@ -13,15 +13,57 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
 
 export default function ProductsPage() {
     const [products, setProducts] = useState<any[]>([]);
+    const [categories, setCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
+    const [isAddOpen, setIsAddOpen] = useState(false);
+    const [formData, setFormData] = useState({
+        name: "",
+        categoryId: "",
+        sku: "",
+        barcode: "",
+        purchasePrice: "",
+        sellingPrice: "",
+        stock: "",
+        minStockAlert: "",
+    });
 
     useEffect(() => {
         fetchProducts();
+        fetchCategories();
     }, [search]);
+
+    const fetchCategories = async () => {
+        try {
+            const res = await fetch("/api/categories");
+            const data = await res.json();
+            if (data.success) {
+                setCategories(data.data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch categories", error);
+        }
+    };
 
     const fetchProducts = async () => {
         setLoading(true);
@@ -40,6 +82,46 @@ export default function ProductsPage() {
         }
     };
 
+    const handleAddProduct = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const res = await fetch("/api/products", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: formData.name,
+                    categoryId: formData.categoryId || undefined,
+                    sku: formData.sku || undefined,
+                    barcode: formData.barcode || undefined,
+                    purchasePrice: Number(formData.purchasePrice),
+                    sellingPrice: Number(formData.sellingPrice),
+                    stock: Number(formData.stock),
+                    minStockAlert: Number(formData.minStockAlert),
+                }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                toast.success("Product added successfully");
+                setIsAddOpen(false);
+                setFormData({
+                    name: "",
+                    categoryId: "",
+                    sku: "",
+                    barcode: "",
+                    purchasePrice: "",
+                    sellingPrice: "",
+                    stock: "",
+                    minStockAlert: "",
+                });
+                fetchProducts();
+            } else {
+                toast.error(data.error || "Failed to add product");
+            }
+        } catch (error: any) {
+            toast.error(error.message);
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center flex-wrap gap-4">
@@ -51,9 +133,171 @@ export default function ProductsPage() {
                         Manage inventory, variations, and stock.
                     </p>
                 </div>
-                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md">
-                    <Plus className="w-4 h-4 mr-2" /> Add Product
-                </Button>
+                <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                    <DialogTrigger asChild>
+                        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md">
+                            <Plus className="w-4 h-4 mr-2" /> Add Product
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                        <form onSubmit={handleAddProduct}>
+                            <DialogHeader>
+                                <DialogTitle>Add New Product</DialogTitle>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label
+                                        htmlFor="name"
+                                        className="text-right"
+                                    >
+                                        Name
+                                    </Label>
+                                    <Input
+                                        id="name"
+                                        required
+                                        value={formData.name}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                name: e.target.value,
+                                            })
+                                        }
+                                        className="col-span-3"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label
+                                        htmlFor="category"
+                                        className="text-right"
+                                    >
+                                        Category
+                                    </Label>
+                                    <Select
+                                        value={formData.categoryId}
+                                        onValueChange={(val) =>
+                                            setFormData({
+                                                ...formData,
+                                                categoryId: val,
+                                            })
+                                        }
+                                    >
+                                        <SelectTrigger className="col-span-3">
+                                            <SelectValue placeholder="Select a category" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {categories.map((c: any) => (
+                                                <SelectItem
+                                                    key={c._id}
+                                                    value={c._id}
+                                                >
+                                                    {c.name}
+                                                </SelectItem>
+                                            ))}
+                                            <SelectItem
+                                                value="new_disabled"
+                                                disabled
+                                            >
+                                                Add Category (coming soon)
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label
+                                        htmlFor="purchasePrice"
+                                        className="text-right"
+                                    >
+                                        Cost
+                                    </Label>
+                                    <Input
+                                        id="purchasePrice"
+                                        type="number"
+                                        required
+                                        value={formData.purchasePrice}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                purchasePrice: e.target.value,
+                                            })
+                                        }
+                                        className="col-span-3"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label
+                                        htmlFor="sellingPrice"
+                                        className="text-right"
+                                    >
+                                        Price
+                                    </Label>
+                                    <Input
+                                        id="sellingPrice"
+                                        type="number"
+                                        required
+                                        value={formData.sellingPrice}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                sellingPrice: e.target.value,
+                                            })
+                                        }
+                                        className="col-span-3"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label
+                                        htmlFor="stock"
+                                        className="text-right"
+                                    >
+                                        Stock
+                                    </Label>
+                                    <Input
+                                        id="stock"
+                                        type="number"
+                                        required
+                                        value={formData.stock}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                stock: e.target.value,
+                                            })
+                                        }
+                                        className="col-span-3"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label
+                                        htmlFor="minStockAlert"
+                                        className="text-right"
+                                    >
+                                        Min Stock
+                                    </Label>
+                                    <Input
+                                        id="minStockAlert"
+                                        type="number"
+                                        required
+                                        value={formData.minStockAlert}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                minStockAlert: e.target.value,
+                                            })
+                                        }
+                                        className="col-span-3"
+                                    />
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button
+                                    type="submit"
+                                    className="bg-emerald-600 text-white hover:bg-emerald-700"
+                                >
+                                    Save
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">

@@ -13,11 +13,30 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
 export default function SuppliersPage() {
     const [suppliers, setSuppliers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
+    const [isAddOpen, setIsAddOpen] = useState(false);
+    const [formData, setFormData] = useState({
+        name: "",
+        contactPerson: "",
+        phone: "",
+        email: "",
+        address: "",
+    });
 
     useEffect(() => {
         fetchSuppliers();
@@ -40,6 +59,34 @@ export default function SuppliersPage() {
         }
     };
 
+    const handleAddSupplier = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const res = await fetch("/api/suppliers", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData),
+            });
+            const data = await res.json();
+            if (data.success) {
+                toast.success("Supplier added successfully");
+                setIsAddOpen(false);
+                setFormData({
+                    name: "",
+                    contactPerson: "",
+                    phone: "",
+                    email: "",
+                    address: "",
+                });
+                fetchSuppliers();
+            } else {
+                toast.error(data.error || "Failed to add supplier");
+            }
+        } catch (error: any) {
+            toast.error(error.message);
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center flex-wrap gap-4">
@@ -51,9 +98,129 @@ export default function SuppliersPage() {
                         Manage vendor accounts and balances.
                     </p>
                 </div>
-                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md">
-                    <Plus className="w-4 h-4 mr-2" /> Add Supplier
-                </Button>
+                <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                    <DialogTrigger asChild>
+                        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md">
+                            <Plus className="w-4 h-4 mr-2" /> Add Supplier
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                        <form onSubmit={handleAddSupplier}>
+                            <DialogHeader>
+                                <DialogTitle>Add New Supplier</DialogTitle>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label
+                                        htmlFor="name"
+                                        className="text-right"
+                                    >
+                                        Company
+                                    </Label>
+                                    <Input
+                                        id="name"
+                                        required
+                                        value={formData.name}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                name: e.target.value,
+                                            })
+                                        }
+                                        className="col-span-3"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label
+                                        htmlFor="contactPerson"
+                                        className="text-right"
+                                    >
+                                        Contact
+                                    </Label>
+                                    <Input
+                                        id="contactPerson"
+                                        required
+                                        value={formData.contactPerson}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                contactPerson: e.target.value,
+                                            })
+                                        }
+                                        className="col-span-3"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label
+                                        htmlFor="phone"
+                                        className="text-right"
+                                    >
+                                        Phone
+                                    </Label>
+                                    <Input
+                                        id="phone"
+                                        required
+                                        value={formData.phone}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                phone: e.target.value,
+                                            })
+                                        }
+                                        className="col-span-3"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label
+                                        htmlFor="email"
+                                        className="text-right"
+                                    >
+                                        Email
+                                    </Label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        value={formData.email}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                email: e.target.value,
+                                            })
+                                        }
+                                        className="col-span-3"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label
+                                        htmlFor="address"
+                                        className="text-right"
+                                    >
+                                        Address
+                                    </Label>
+                                    <Textarea
+                                        id="address"
+                                        value={formData.address}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                address: e.target.value,
+                                            })
+                                        }
+                                        className="col-span-3"
+                                    />
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button
+                                    type="submit"
+                                    className="bg-emerald-600 text-white hover:bg-emerald-700"
+                                >
+                                    Save
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">

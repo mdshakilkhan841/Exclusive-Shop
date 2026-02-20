@@ -36,6 +36,15 @@ async function dbConnect() {
         throw e;
     }
 
+    // Explicitly load models to prevent "Schema hasn't been registered" errors in Next.js edge cases
+    await import("@/models/User");
+    await import("@/models/Category");
+    await import("@/models/ProductVariant");
+    await import("@/models/Product");
+    await import("@/models/Customer");
+    await import("@/models/Supplier");
+    await import("@/models/Sale");
+
     return cached.conn;
 }
 

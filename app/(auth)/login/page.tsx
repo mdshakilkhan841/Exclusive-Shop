@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
+
 export default function LoginPage() {
     const router = useRouter();
     const [email, setEmail] = useState("");
@@ -15,19 +18,35 @@ export default function LoginPage() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
-    // Function to hook into BetterAuth client later
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError("");
 
         try {
-            // Temporary Mock Login Logic
-            if (email === "admin@test.com" && password === "1234") {
-                router.push("/dashboard");
-            } else {
-                setError("Invalid credentials. Try admin@test.com / 1234");
-            }
+            await authClient.signIn.email({
+                email,
+                password,
+                fetchOptions: {
+                    onResponse: (context) => {
+                        if (context.response.status === 200) {
+                            toast.success("Login successful!");
+                            router.push("/dashboard");
+                            router.refresh();
+                        } else {
+                            setError(
+                                context.error?.message || "Invalid credentials",
+                            );
+                        }
+                    },
+                    onError: (context) => {
+                        setError(
+                            context.error.message ||
+                                "An error occurred during login",
+                        );
+                    },
+                },
+            });
         } catch (err: any) {
             setError(err.message || "An error occurred during login");
         } finally {

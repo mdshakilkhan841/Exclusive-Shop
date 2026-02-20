@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { MongoClient } from "mongodb";
 
 // We use the mongodb driver directly for the betterAuth adapter since BetterAuth's mongodb adapter
@@ -20,13 +21,13 @@ if (!cachedClient) {
 }
 
 const client: MongoClient = cachedClient;
+const db = client.db();
 
 // The Better Auth Instance
 export const auth = betterAuth({
-    database: {
-        db: client.db("exclusive_shop"),
-        type: "mongodb",
-    },
+    database: mongodbAdapter(db, {
+        client,
+    }),
     emailAndPassword: {
         enabled: true,
     },
